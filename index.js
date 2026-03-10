@@ -9,6 +9,15 @@ const MONGO_URI = process.env.MONGO_URI;
 
 let db;
 
+// Approval keywords
+const APPROVE_WORDS = ["approve", "approved", "confirmed"];
+
+function isApprovalMessage(text) {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return APPROVE_WORDS.some(word => lower.includes(word));
+}
+
 // Connect to MongoDB
 MongoClient.connect(MONGO_URI, {
     tls: true,
@@ -39,12 +48,32 @@ app.post("/webhook", async (req, res) => {
     try {
         const data = req.body;
 
+        // Save raw message
         await db.collection("messages").insertOne({
             received_at: new Date(),
             data: data
         });
 
         console.log("Saved message to DB");
+
+        // Extract message text
+        const entry = data.entry?.[0];
+        const changes = entry?.changes?.[0];
+        const message = changes?.value?.messages?.[0];
+        const text = message?.text?.body;
+
+        // Detect approval
+        if (isApprovalMessage(text)) {
+            console.log("Approval detected:", text);
+
+            await db.collection("approvals").insertOne({
+                received_at: new Date(),
+                approver: message.from,
+                text: text,
+                raw: data
+            });
+        }
+
     } catch (err) {
         console.error("DB Error:", err);
     }
