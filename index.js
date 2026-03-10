@@ -1,9 +1,23 @@
 const express = require("express");
+const { MongoClient } = require("mongodb");
+
 const app = express();
 app.use(express.json());
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const MONGO_URI = process.env.MONGO_URI;
 
+let db;
+
+// Connect to MongoDB
+MongoClient.connect(MONGO_URI)
+    .then(client => {
+        db = client.db("whatsapp_logger");
+        console.log("Connected to MongoDB");
+    })
+    .catch(err => console.error("MongoDB connection error:", err));
+
+// Verification endpoint
 app.get("/webhook", (req, res) => {
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
@@ -16,10 +30,24 @@ app.get("/webhook", (req, res) => {
     }
 });
 
-app.post("/webhook", (req, res) => {
-    console.log("Incoming WhatsApp Message:");
-    console.log(JSON.stringify(req.body, null, 2));
+// Receive messages
+app.post("/webhook", async (req, res) => {
+    try {
+        const data = req.body;
+
+        await db.collection("messages").insertOne({
+            received_at: new Date(),
+            data: data
+        });
+
+        console.log("Saved message to DB");
+    } catch (err) {
+        console.error("DB Error:", err);
+    }
+
     res.sendStatus(200);
 });
 
-app.listen(3000, () => console.log("Webhook running on port 3000"));
+app.listen(process.env.PORT || 3000, () =>
+    console.log("Webhook running")
+);
