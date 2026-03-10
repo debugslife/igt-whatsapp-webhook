@@ -10,7 +10,11 @@ const MONGO_URI = process.env.MONGO_URI;
 let db;
 
 // Connect to MongoDB
-MongoClient.connect(MONGO_URI)
+MongoClient.connect(MONGO_URI, {
+    tls: true,
+    tlsAllowInvalidCertificates: false,
+    serverSelectionTimeoutMS: 5000
+})
     .then(client => {
         db = client.db("whatsapp_logger");
         console.log("Connected to MongoDB");
