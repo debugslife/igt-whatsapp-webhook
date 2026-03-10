@@ -10,7 +10,7 @@ const MONGO_URI = process.env.MONGO_URI;
 let db;
 
 // Approval keywords
-const APPROVE_WORDS = ["approve", "approved", "confirmed"];
+const APPROVE_WORDS = ["approve", "approved", "confirmed","text"];
 
 function isApprovalMessage(text) {
     if (!text) return false;
