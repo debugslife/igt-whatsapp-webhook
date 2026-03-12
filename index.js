@@ -1,6 +1,8 @@
 const express = require("express");
 const { MongoClient } = require("mongodb");
-const fetch = require("node-fetch");
+const fetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
 const { google } = require("googleapis");
 
 const app = express();
